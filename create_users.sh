@@ -1,8 +1,10 @@
 #!/bin/bash
 
-# Paths to the log and password files in the home directory
-LOG_FILE="$HOME/user_management.log"
-PASSWORD_FILE="$HOME/user_passwords.txt"
+# Paths to the log and password files
+LOG_DIR="/var/log"
+LOG_FILE="$LOG_DIR/user_management.log"
+SECURE_DIR="/var/secure"
+PASSWORD_FILE="$SECURE_DIR/user_passwords.txt"
 
 # Function to log messages
 log_message() {
@@ -14,10 +16,49 @@ generate_password() {
     tr -dc A-Za-z0-9 </dev/urandom | head -c 16 ; echo ''
 }
 
-# Ensure the log and password files exist
-touch "$LOG_FILE"
-touch "$PASSWORD_FILE"
-chmod 600 "$PASSWORD_FILE"
+# Ensure secure directory exists and has the correct permissions
+if [ ! -d "$SECURE_DIR" ]; then
+    sudo mkdir -p "$SECURE_DIR"
+    sudo chmod 700 "$SECURE_DIR"
+    sudo chown root:root "$SECURE_DIR"
+    log_message "INFO: Created and secured directory $SECURE_DIR."
+else
+    sudo chmod 700 "$SECURE_DIR"
+    sudo chown root:root "$SECURE_DIR"
+    log_message "INFO: Verified and secured directory $SECURE_DIR."
+fi
+
+# Ensure log directory exists and has the correct permissions
+if [ ! -d "$LOG_DIR" ]; then
+    sudo mkdir -p "$LOG_DIR"
+    sudo chmod 755 "$LOG_DIR"
+    sudo chown root:root "$LOG_DIR"
+    log_message "INFO: Created and secured directory $LOG_DIR."
+fi
+
+# Ensure log file exists and has the correct permissions
+if [ ! -f "$LOG_FILE" ]; then
+    sudo touch "$LOG_FILE"
+    sudo chmod 644 "$LOG_FILE"
+    sudo chown root:root "$LOG_FILE"
+    log_message "INFO: Created and secured log file $LOG_FILE."
+else
+    sudo chmod 644 "$LOG_FILE"
+    sudo chown root:root "$LOG_FILE"
+    log_message "INFO: Verified and secured log file $LOG_FILE."
+fi
+
+# Ensure password file exists and has the correct permissions
+if [ ! -f "$PASSWORD_FILE" ]; then
+    sudo touch "$PASSWORD_FILE"
+    sudo chmod 600 "$PASSWORD_FILE"
+    sudo chown root:root "$PASSWORD_FILE"
+    log_message "INFO: Created and secured password file $PASSWORD_FILE."
+else
+    sudo chmod 600 "$PASSWORD_FILE"
+    sudo chown root:root "$PASSWORD_FILE"
+    log_message "INFO: Verified and secured password file $PASSWORD_FILE."
+fi
 
 # Check if a filename was provided
 if [ -z "$1" ]; then
@@ -51,7 +92,7 @@ while IFS=';' read -r user groups; do
         echo "$user:$password" | sudo chpasswd
         
         # Store the password securely
-        echo "$user,$password" >> "$PASSWORD_FILE"
+        echo "$user,$password" | sudo tee -a "$PASSWORD_FILE" > /dev/null
         
         log_message "INFO: Password set for user $user."
     fi
